@@ -2,12 +2,32 @@
 
 A FastAPI web application that extracts and visualizes the development story of GitHub repositories. It fetches repository metadata, file structures, commit history, and detailed file change information.
 
+## ✨ New Feature: Say-Do Alignment Tracker
+
+**AI-powered commit quality analysis** that compares what developers *say* they did (commit messages) with what they *actually* did (file changes). Uses semantic embeddings to detect:
+
+- **High Confidence (1.0)**: Well-aligned commits with clear, descriptive messages
+- **Medium Confidence (0.75)**: Partially aligned commits with some clarity
+- **Low Confidence (0.5)**: Misaligned or unclear commits that may need review
+
+### How It Works
+
+1. **Semantic Translation**: Converts file paths to natural language descriptions
+   - `src/components/Button.jsx` → "Frontend user interface React component"
+   - `backend/models/user.py` → "Backend database schema and logic"
+
+2. **Vector Similarity**: Uses sentence-transformers to calculate semantic similarity between commit messages and file descriptions
+
+3. **Architectural Clustering**: Groups commits by architectural components (Frontend, Backend, Database, DevOps) using K-Means clustering
+
 ## Features
 
 - **Repository Context**: Extracts README and default branch information
 - **File Skeleton**: Maps the complete directory structure of the repository
 - **Commit Timeline**: Fetches commit history with author, date, and message information
 - **Deep Dive Analysis**: Detailed file change information for selected commits
+- **Say-Do Alignment**: AI-powered analysis of commit message quality and alignment
+- **Developer Insights**: Performance metrics for individual contributors
 - **API Rate Limiting**: Built-in safety pacing to respect GitHub API limits
 - **GitHub Token Support**: Optional personal access token for higher rate limits
 
@@ -68,7 +88,12 @@ The extracted data will be saved as a JSON file on the server with the following
 - `repository`: Repository identifier
 - `context`: README and branch information
 - `skeleton`: File tree structure
-- `timeline`: Commit history with file changes
+- `timeline`: Commit history with file changes and alignment confidence scores
+- `alignment_insights`: AI-powered analysis results including:
+  - `confidence_distribution`: Count of high/medium/low confidence commits
+  - `developer_scores`: Performance metrics for each contributor
+  - `architecture_clusters`: Commits grouped by architectural component
+  - `problematic_commits`: List of commits needing review
 
 ## Configuration
 
@@ -115,6 +140,9 @@ The application includes automatic rate limiting:
 - Uvicorn
 - Requests
 - python-dotenv
+- **NEW**: sentence-transformers (for semantic embeddings)
+- **NEW**: scikit-learn (for clustering analysis)
+- **NEW**: numpy (for vector operations)
 
 ## License
 
