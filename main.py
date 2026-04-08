@@ -2,6 +2,7 @@ import json
 import os
 import re
 import requests
+import base64
 from collections import Counter
 from datetime import datetime
 from dotenv import load_dotenv
@@ -107,7 +108,7 @@ def compute_confidence(vec, seen_vecs, raw_msg):
     return round(min(1.0, 0.55 * uniqueness + 0.45 * quality), 2)
 
 
-def save_run(run_dir, result, vector_log, raw_github_data=None):
+def save_run(run_dir, result, vector_log, raw_github_data=None, digital_master=None):
     """Persist analysis result and full vector log to the runs/ folder."""
     os.makedirs(run_dir, exist_ok=True)
     with open(os.path.join(run_dir, "analysis.json"), "w", encoding="utf-8") as f:
@@ -118,6 +119,10 @@ def save_run(run_dir, result, vector_log, raw_github_data=None):
     if raw_github_data:
         with open(os.path.join(run_dir, "raw_github_data.json"), "w", encoding="utf-8") as f:
             json.dump(raw_github_data, f, indent=2, default=str)
+            
+    if digital_master:
+        with open(os.path.join(run_dir, "digital_master.json"), "w", encoding="utf-8") as f:
+            json.dump(digital_master, f, indent=2, default=str)
             
     print(f"[Run saved] → {run_dir}")
 
@@ -141,7 +146,7 @@ async def execute_pipeline(request: AnalyzeRequest):
         owner, repo = parts[0], parts[1].replace('.git', '')
         headers = {'Authorization': f'Bearer {GITHUB_TOKEN}'} if GITHUB_TOKEN else {}
 
-        # 1. REPO META
+        # 1. REPO META & README
         repo_info = requests.get(f'https://api.github.com/repos/{owner}/{repo}', headers=headers).json()
         if 'message' in repo_info:
             return {'status': 'error', 'message': repo_info['message']}
@@ -151,7 +156,15 @@ async def execute_pipeline(request: AnalyzeRequest):
         forks        = repo_info.get('forks_count', 0)
         description  = repo_info.get('description', '')
 
-        # 2. FILE TREE
+        # Fetch README for Digital Master Context
+        readme_resp = requests.get(f"https://api.github.com/repos/{owner}/{repo}/readme", headers=headers)
+        if readme_resp.status_code == 200:
+            rd = readme_resp.json()
+            readme_content = base64.b64decode(rd.get('content', '')).decode('utf-8', errors='ignore')
+        else:
+            readme_content = "No README found."
+
+        # 2. FILE TREE (SKELETON)
         tree_resp = requests.get(
             f'https://api.github.com/repos/{owner}/{repo}/git/trees/{default_branch}?recursive=1',
             headers=headers
@@ -292,7 +305,38 @@ async def execute_pipeline(request: AnalyzeRequest):
                 'clustered_commits': clustered_commits,
             }
 
-        # 6. PERSIST RUN TO DISK
+        # 6. BUILD DIGITAL MASTER RECORD
+        # The AI Engine executes and injects conclusions (timeline + confidence + layer + files_changed)
+        master_timeline = []
+        for c in meaningful:
+            # Fetch files changed for this meaningful commit
+            try:
+                commit_full = requests.get(f"https://api.github.com/repos/{owner}/{repo}/commits/{c['hash']}", headers=headers).json()
+                files_changed = [f['filename'] for f in commit_full.get('files', [])]
+            except:
+                files_changed = []
+            
+            master_timeline.append({
+                "hash": c['hash'],
+                "author": c['author'],
+                "date": c['date'],
+                "message": c['message'],
+                "files_changed": files_changed,
+                "confidence": c['confidence'],
+                "layer": c['cluster']
+            })
+
+        digital_master = {
+            "repository": f"{owner}/{repo}",
+            "context": {
+                "default_branch": default_branch,
+                "readme": readme_content
+            },
+            "skeleton": [{"path": p, "type": "blob"} for p in clean_tree],
+            "timeline": master_timeline
+        }
+
+        # 7. PERSIST RUN TO DISK
         ts = datetime.utcnow().strftime("%Y-%m-%d_%H-%M-%S")
         run_id  = f"{ts}_{owner}_{repo}"
         run_dir = os.path.join(RUNS_DIR, run_id)
@@ -303,7 +347,7 @@ async def execute_pipeline(request: AnalyzeRequest):
             "commits_raw": commits_raw
         }
         
-        save_run(run_dir, result, vector_log, raw_github_data)
+        save_run(run_dir, result, vector_log, raw_github_data, digital_master)
 
         return result
 
