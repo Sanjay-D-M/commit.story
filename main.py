@@ -93,13 +93,18 @@ def compute_confidence(vec, seen_vecs, raw_msg):
     return round(min(1.0, 0.55 * uniqueness + 0.45 * quality), 2)
 
 
-def save_run(run_dir, result, vector_log):
+def save_run(run_dir, result, vector_log, raw_github_data=None):
     """Persist analysis result and full vector log to the runs/ folder."""
     os.makedirs(run_dir, exist_ok=True)
     with open(os.path.join(run_dir, "analysis.json"), "w", encoding="utf-8") as f:
         json.dump(result, f, indent=2, default=str)
     with open(os.path.join(run_dir, "vector_log.json"), "w", encoding="utf-8") as f:
         json.dump(vector_log, f, indent=2, default=str)
+    
+    if raw_github_data:
+        with open(os.path.join(run_dir, "raw_github_data.json"), "w", encoding="utf-8") as f:
+            json.dump(raw_github_data, f, indent=2, default=str)
+            
     print(f"[Run saved] → {run_dir}")
 
 
@@ -259,7 +264,14 @@ async def execute_pipeline(request: AnalyzeRequest):
         ts = datetime.utcnow().strftime("%Y-%m-%d_%H-%M-%S")
         run_id  = f"{ts}_{owner}_{repo}"
         run_dir = os.path.join(RUNS_DIR, run_id)
-        save_run(run_dir, result, vector_log)
+        
+        raw_github_data = {
+            "repo_info": repo_info,
+            "tree_resp": tree_resp,
+            "commits_raw": commits_raw
+        }
+        
+        save_run(run_dir, result, vector_log, raw_github_data)
 
         return result
 
