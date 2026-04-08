@@ -1,0 +1,127 @@
+{
+  "status": "success",
+  "persona": "tech",
+  "repo_meta": {
+    "name": "BankingSystem",
+    "owner": "ssoad",
+    "stars": 257,
+    "forks": 199,
+    "description": "Bank Management System using Java Swing"
+  },
+  "analytics": {
+    "total_files": 149,
+    "frameworks": [
+      "Java"
+    ],
+    "raw_commits": 7,
+    "noise_filtered": 1,
+    "meaningful_commits": 6,
+    "noise_pct": 14.3
+  },
+  "leaderboard": [
+    {
+      "name": "Sohanuzzaman Soad",
+      "commit_count": 5
+    },
+    {
+      "name": "Ivo Neiman",
+      "commit_count": 1
+    }
+  ],
+  "file_structure": [
+    ".classpath",
+    ".gitattributes",
+    ".idea/.gitignore",
+    ".idea/misc.xml",
+    ".idea/vcs.xml",
+    ".project",
+    "Bank.pdf",
+    "README.md",
+    "bin/Application$1.class",
+    "bin/Application.class",
+    "bin/Bank/Bank.class",
+    "bin/Bank/BankAccount.class",
+    "bin/Bank/CurrentAccount.class",
+    "bin/Bank/SavingsAccount.class",
+    "bin/Bank/StudentAccount.class",
+    "bin/Data/FileIO.class",
+    "bin/Exceptions/AccNotFound.class",
+    "bin/Exceptions/InvalidAmount.class",
+    "bin/Exceptions/MaxBalance.class",
+    "bin/Exceptions/MaxWithdraw.class",
+    "bin/GUI/AddAccount$1.class",
+    "bin/GUI/AddAccount$2.class",
+    "bin/GUI/AddAccount$3.class",
+    "bin/GUI/AddAccount.class",
+    "bin/GUI/AddCurrentAccount$1.class",
+    "bin/GUI/AddCurrentAccount$2.class",
+    "bin/GUI/AddCurrentAccount.class",
+    "bin/GUI/AddSavingsAccount$1.class",
+    "bin/GUI/AddSavingsAccount$2.class",
+    "bin/GUI/AddSavingsAccount.class",
+    "bin/GUI/AddStudentAccount$1.class",
+    "bin/GUI/AddStudentAccount$2.class",
+    "bin/GUI/AddStudentAccount.class",
+    "bin/GUI/DepositAcc$1.class",
+    "bin/GUI/DepositAcc$2.class",
+    "bin/GUI/DepositAcc.class",
+    "bin/GUI/DisplayList.class",
+    "bin/GUI/GUIForm.class",
+    "bin/GUI/Login$1.class",
+    "bin/GUI/Login.class",
+    "bin/GUI/Menu$1.class",
+    "bin/GUI/Menu$2.class",
+    "bin/GUI/Menu$3.class",
+    "bin/GUI/Menu$4.class",
+    "bin/GUI/Menu$5.class",
+    "bin/GUI/Menu.class",
+    "bin/GUI/WithdrawAcc$1.class",
+    "bin/GUI/WithdrawAcc$2.class",
+    "bin/GUI/WithdrawAcc.class",
+    "bin/img/1.png"
+  ],
+  "clean_ledger": [
+    {
+      "hash": "959f5af",
+      "author": "Sohanuzzaman Soad",
+      "message": "Update BankAccount.java",
+      "date": "2025-01-06T06:46:58Z",
+      "confidence": 0.66
+    },
+    {
+      "hash": "924d3d4",
+      "author": "Sohanuzzaman Soad",
+      "message": "Merge pull request #5 from ivoneiman/refactor/bankaccount-centralized-validations",
+      "date": "2024-12-26T07:13:06Z",
+      "confidence": 0.65
+    },
+    {
+      "hash": "c949e14",
+      "author": "Ivo Neiman",
+      "message": "Refactored BankAccount class to centralize minimum balance validations and added validation for negative deposits.",
+      "date": "2024-12-25T23:42:41Z",
+      "confidence": 0.64
+    },
+    {
+      "hash": "552ba00",
+      "author": "Sohanuzzaman Soad",
+      "message": "Updates",
+      "date": "2023-12-13T11:18:26Z",
+      "confidence": 0.57
+    },
+    {
+      "hash": "2c3f87f",
+      "author": "Sohanuzzaman Soad",
+      "message": "Update README.md",
+      "date": "2023-12-13T10:56:50Z",
+      "confidence": 0.53
+    },
+    {
+      "hash": "cb1136a",
+      "author": "Sohanuzzaman Soad",
+      "message": "Initial commit",
+      "date": "2020-04-11T16:26:52Z",
+      "confidence": 0.51
+    }
+  ]
+}
