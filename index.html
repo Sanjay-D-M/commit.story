@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Repository Story Extractor</title>
+    <style>
+        body { font-family: sans-serif; padding: 20px; max-width: 600px; margin: auto; }
+        input { width: 100%; padding: 10px; font-size: 16px; margin-bottom: 10px; box-sizing: border-box;}
+        button { padding: 10px 20px; font-size: 16px; cursor: pointer; background-color: #2ea44f; color: white; border: none; border-radius: 6px;}
+        button:disabled { background-color: #94d3a2; cursor: not-allowed; }
+        
+        /* UI Panels */
+        #loadingPanel { display: none; margin-top: 20px; padding: 15px; background: #fff3cd; border-left: 4px solid #ffeeba; }
+        #successPanel { display: none; margin-top: 20px; padding: 15px; background: #d4edda; border-left: 4px solid #c3e6cb; }
+        #errorPanel { display: none; margin-top: 20px; padding: 15px; background: #f8d7da; border-left: 4px solid #f5c6cb; }
+        
+        .spinner { display: inline-block; width: 20px; height: 20px; border: 3px solid rgba(0,0,0,.1); border-radius: 50%; border-top-color: #000; animation: spin 1s ease-in-out infinite; vertical-align: middle; margin-right: 10px; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+    </style>
+</head>
+<body>
+    <h2>Repository Story Extractor</h2>
+    
+    <div>
+        <input type="text" id="repoUrl" placeholder="e.g., https://github.com/facebook/react">
+        <button id="fetchBtn" onclick="sendData()">Start Extraction Pipeline</button>
+    </div>
+
+    <div id="loadingPanel">
+        <div class="spinner"></div>
+        <b>Processing Repository...</b><br>
+        <span style="font-size: 14px; color: #666; margin-top: 5px; display: inline-block;">
+            Fetching file structures and pacing API calls to stay within GitHub limits. This may take a few minutes depending on the deep-dive limits. Please do not close this window.
+        </span>
+    </div>
+
+    <div id="successPanel">
+        <h3 style="margin-top: 0;">✅ Extraction Complete</h3>
+        <p id="successMessage"></p>
+        <ul id="successMetrics"></ul>
+        <p style="font-size: 14px; color: #666;">You can now find the JSON file on your server ready for further analysis.</p>
+    </div>
+
+    <div id="errorPanel"></div>
+
+    <script>
+        async function sendData() {
+            const urlInput = document.getElementById('repoUrl').value;
+            const fetchBtn = document.getElementById('fetchBtn');
+            const loadingPanel = document.getElementById('loadingPanel');
+            const successPanel = document.getElementById('successPanel');
+            const errorPanel = document.getElementById('errorPanel');
+            
+            // Reset UI
+            successPanel.style.display = 'none';
+            errorPanel.style.display = 'none';
+
+            if (!urlInput) {
+                errorPanel.innerText = "Please enter a repository URL first.";
+                errorPanel.style.display = 'block';
+                return;
+            }
+
+            // Show loading state and disable button
+            loadingPanel.style.display = 'block';
+            fetchBtn.disabled = true;
+
+            try {
+                const response = await fetch('/api/fetch-repo-story', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        url: urlInput,
+                        total_commits_to_fetch: 100, // Adjust as needed
+                        deep_dive_limit: 20 // Adjust as needed
+                    })
+                });
+                
+                const data = await response.json();
+                loadingPanel.style.display = 'none';
+                fetchBtn.disabled = false;
+
+                if (data.status === "success") {
+                    document.getElementById('successMessage').innerText = `Saved file: ${data.file_created}`;
+                    
+                    const metricsHtml = `
+                        <li><b>Skeleton Files Mapped:</b> ${data.metrics.skeleton_files_mapped}</li>
+                        <li><b>Total Commits Fetched:</b> ${data.metrics.total_commits_fetched}</li>
+                        <li><b>Deep Dives Performed:</b> ${data.metrics.deep_dives_performed}</li>
+                    `;
+                    document.getElementById('successMetrics').innerHTML = metricsHtml;
+                    
+                    successPanel.style.display = 'block';
+                } else {
+                    errorPanel.innerText = `Error: ${data.message}`;
+                    errorPanel.style.display = 'block';
+                }
+                
+            } catch (error) {
+                loadingPanel.style.display = 'none';
+                fetchBtn.disabled = false;
+                errorPanel.innerText = "Connection error: " + error.message;
+                errorPanel.style.display = 'block';
+            }
+        }
+    </script>
+</body>
+</html>
