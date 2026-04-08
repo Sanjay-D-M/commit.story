@@ -66,6 +66,20 @@ def get_architectural_layer(files):
     return best if scores[best] > 0 else 'Other'
 
 
+def cluster_commit(msg):
+    """Categorizes a commit message into architectural domains using heuristics."""
+    msg_l = msg.lower()
+    if re.search(r'\b(ui|ux|frontend|css|html|react|vue|tailwind|component|style|view|button|layout|page|dom|jsx|tsx)\b', msg_l):
+        return 'Frontend'
+    if re.search(r'\b(db|sql|database|migration|schema|query|postgres|mongo|redis|table|model|orm)\b', msg_l):
+        return 'Database'
+    if re.search(r'\b(backend|api|endpoint|server|auth|route|controller|service|handler|logic|fastapi|express|rest|graphql|java|python|rust|go)\b', msg_l):
+        return 'Backend'
+    if re.search(r'\b(docker|ci/?cd|action|pipeline|infra|deploy|kubernetes|k8s|workflow|build|config|env|yaml|json|setup|init)\b', msg_l):
+        return 'Infrastructure'
+    return 'Other'
+
+
 def generate_insights(commits):
     total = len(commits)
     if total == 0:
@@ -184,12 +198,14 @@ async def execute_pipeline(request: AnalyzeRequest):
 
             if not is_duplicate:
                 confidence = compute_confidence(vec, seen_vecs, raw_msg)
+                cluster    = cluster_commit(raw_msg)
                 meaningful.append({
                     'hash':       sha[:7],
                     'author':     author,
                     'message':    raw_msg,
                     'date':       date,
                     'confidence': confidence,
+                    'cluster':    cluster,
                 })
                 vector_log.append({
                     'hash':                    sha[:7],
@@ -216,11 +232,22 @@ async def execute_pipeline(request: AnalyzeRequest):
         noise_pct = round(noise_filtered / raw_count * 100, 1) if raw_count else 0
         insights = generate_insights(meaningful)
 
-        # 5. PERSONA ROUTING
+        # 5. PERSONA ROUTING && CLUSTERING
         repo_meta = {
             'name': repo, 'owner': owner,
             'stars': stars, 'forks': forks, 'description': description,
         }
+
+        # Build clustered commits for RAG/LLM narratives
+        clustered_commits = {
+            "Frontend": [],
+            "Backend": [],
+            "Database": [],
+            "Infrastructure": [],
+            "Other": []
+        }
+        for c in meaningful:
+            clustered_commits[c['cluster']].append(c)
 
         if request.user_type == 'non-tech':
             top = insights.get('top_contributor', 'the team')
@@ -228,10 +255,13 @@ async def execute_pipeline(request: AnalyzeRequest):
                 f"This project — **{repo}** — is powered by {', '.join(tech_stack[:3])}. "
                 f"After removing {noise_filtered} repetitive or noisy commits using AI, "
                 f"the team has shipped {len(meaningful)} distinct, meaningful contributions. "
-                f"The primary driver of development is **{top}**, and the project has earned "
+                f"Backend saw {len(clustered_commits['Backend'])} updates, "
+                f"Frontend saw {len(clustered_commits['Frontend'])}, and "
+                f"Infrastructure/Data saw {len(clustered_commits['Database']) + len(clustered_commits['Infrastructure'])}. "
+                f"The primary driver of development is **{top}**, earning "
                 f"{stars:,} ⭐ stars and {forks:,} forks on GitHub."
             )
-            return {
+            result = {
                 'status':    'success',
                 'persona':   'non-tech',
                 'repo_meta': repo_meta,
@@ -240,6 +270,7 @@ async def execute_pipeline(request: AnalyzeRequest):
                     'total_meaningful_updates': len(meaningful),
                     'top_contributors':         [d['name'] for d in insights.get('leaderboard', [])[:3]],
                 },
+                'clustered_commits': clustered_commits,
                 'story': story,
             }
         else:
@@ -255,9 +286,10 @@ async def execute_pipeline(request: AnalyzeRequest):
                     'meaningful_commits': len(meaningful),
                     'noise_pct':          noise_pct,
                 },
-                'leaderboard':    insights.get('leaderboard', []),
-                'file_structure': clean_tree[:50],
-                'clean_ledger':   meaningful[:50],
+                'leaderboard':       insights.get('leaderboard', []),
+                'file_structure':    clean_tree[:50],
+                'clean_ledger':      meaningful[:50],
+                'clustered_commits': clustered_commits,
             }
 
         # 6. PERSIST RUN TO DISK
