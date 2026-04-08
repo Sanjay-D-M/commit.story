@@ -227,6 +227,12 @@
     .author-cell{font-weight:600;white-space:nowrap}
     .date-cell{color:var(--fg-muted);font-size:12px;white-space:nowrap}
 
+    /* Confidence badge in ledger */
+    .conf-badge{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:12px;font-size:12px;font-weight:600;font-family:"SFMono-Regular",Consolas,monospace}
+    .conf-high{background:var(--success-bg);color:var(--success-fg);border:1px solid rgba(63,185,80,.25)}
+    .conf-med {background:var(--warn-bg);color:var(--warn-fg);border:1px solid rgba(210,153,34,.25)}
+    .conf-low {background:var(--danger-bg);color:var(--danger-fg);border:1px solid rgba(248,81,73,.25)}
+
     /* ── STORY CARD ──────────────────────────────────────── */
     .story-card{
       background:linear-gradient(135deg,rgba(31,111,235,.08),rgba(35,134,54,.08));
@@ -432,7 +438,7 @@
       <div style="overflow-x:auto">
         <table class="gh-table">
           <thead><tr>
-            <th>Hash</th><th>Commit Message</th><th>Author</th><th>Date</th>
+            <th>Hash</th><th>Commit Message</th><th>Author</th><th>Confidence</th><th>Date</th>
           </tr></thead>
           <tbody id="ledgerBody"></tbody>
         </table>
@@ -625,14 +631,17 @@
     // Ledger
     document.getElementById('t-ledgCnt').textContent = cl.length;
     document.getElementById('t-dedupeLabel').textContent = `Showing ${cl.length} of ${an.meaningful_commits} unique commits`;
-    document.getElementById('ledgerBody').innerHTML = cl.map(c =>
-      `<tr>
+    document.getElementById('ledgerBody').innerHTML = cl.map(c => {
+      const conf = c.confidence ?? 0;
+      const confClass = conf >= 0.7 ? 'conf-high' : conf >= 0.4 ? 'conf-med' : 'conf-low';
+      return `<tr>
         <td><span class="hash">${c.hash}</span></td>
         <td><span class="cm">${escHtml(c.message)}</span></td>
         <td class="author-cell">${escHtml(c.author)}</td>
+        <td><span class="conf-badge ${confClass}">${conf.toFixed(2)}</span></td>
         <td class="date-cell">${fmtDate(c.date)}</td>
-      </tr>`
-    ).join('');
+      </tr>`;
+    }).join('');
 
     // File tree
     document.getElementById('t-treeCnt').textContent = fs.length;
